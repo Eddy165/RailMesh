@@ -2,16 +2,23 @@ import csv
 import os
 from typing import List
 from datetime import datetime
+from pathlib import Path
 from app.models.base import Station, TrackSegment, Train, TrainSchedule, PriorityClass, ScheduleEntry
 from app.data.manager import DataLoader
 
+
+DEFAULT_DATA_DIR = Path(__file__).parent / "static_dataset"
+
+
 class StaticDataLoader(DataLoader):
-    def __init__(self, data_dir: str = None):
-        self.data_dir = data_dir or os.environ.get("RAILMESH_DATA_DIR", "data/static")
+    def __init__(self, data_dir=None):
+        if data_dir is None:
+            data_dir = os.environ.get("RAILMESH_DATA_DIR", str(DEFAULT_DATA_DIR))
+        self.data_dir = Path(data_dir)
 
     def _read_csv(self, filename: str) -> List[dict]:
-        filepath = os.path.join(self.data_dir, filename)
-        if not os.path.exists(filepath):
+        filepath = self.data_dir / filename
+        if not filepath.exists():
             return []
         with open(filepath, mode="r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -47,16 +54,10 @@ class StaticDataLoader(DataLoader):
     def load_schedules(self) -> List[TrainSchedule]:
         data = self._read_csv("schedules.csv")
         schedules_dict = {}
-        
         for row in data:
             train_id = row["train_id"]
             if train_id not in schedules_dict:
-                schedules_dict[train_id] = {
-                    "train_id": train_id,
-                    "route": [],
-                    "entries": []
-                }
-            
+                schedules_dict[train_id] = {"train_id": train_id, "route": [], "entries": []}
             schedules_dict[train_id]["route"].append(row["segment_id"])
             schedules_dict[train_id]["entries"].append(
                 ScheduleEntry(
@@ -65,5 +66,4 @@ class StaticDataLoader(DataLoader):
                     departure_time=datetime.fromisoformat(row["departure_time"])
                 )
             )
-            
         return [TrainSchedule(**v) for v in schedules_dict.values()]

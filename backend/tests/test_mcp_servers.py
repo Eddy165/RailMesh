@@ -63,10 +63,10 @@ def test_negotiation_mcp():
     assert rej_res["action"] == "REJECT"
 
     # Commit
-    com_res = commit("COORD", ["T1", "T2"], {"final": "schedule"}, msg_id)
+    com_res = commit("COORD", ["T1", "T2"], {"final": "schedule"}, "default")
     assert com_res["action"] == "COMMIT"
 
     # Get log
-    logs = get_log(msg_id)
+    logs = get_log("default")
     assert len(logs) == 5
     assert logs[-1]["action"] == "COMMIT"
